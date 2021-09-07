@@ -1,13 +1,36 @@
-name: 'Delete old artifacts'
+
+name: 'build-test'
 on:
-  schedule:
-    - cron: '* */1 * * *' # every hour
+  pull_request:
+  push:
+    branches:
+      - master
+      - 'releases/*'
 
 jobs:
-  delete-artifacts:
+  artifact:
     runs-on: ubuntu-latest
     steps:
-      - uses: kolpav/purge-artifacts-action@v1
+      - name: Generate artifact to delete
+        run: |
+          echo $(date) > date.txt
+      - name: Upload artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: artifact
+          path: date.txt
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: |
+          yarn
+          yarn run all
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: ./
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          expire-in: 7days # Setting this to 0 will delete all artifacts
+          expire-in: '30minutes'
